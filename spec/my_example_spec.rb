@@ -27,7 +27,13 @@ describe 'Salary Slip Generator' do
     expect(salary_slip.national_insurance_contributions).to eq(90.60)
   end
   it 'should not contribute to National Insurance if annual is lower than 8060' do
+    employee = Employee.new
+    employee.annual_salary = 8059.99
 
+    generator = SalarySlipGenerator.new
+    salary_slip = generator.generate_for(employee)
+
+    expect(salary_slip.national_insurance_contributions).to eq(0.00)
   end
 
 
