@@ -62,7 +62,7 @@ class Salary
 
     tax.free_allowance = tax.free_allowance.round(2)
     tax.income = tax.income.round(2)
-    tax.payable = tax.payable.round(2)
+    tax.payable = (tax.payable / MONTHS_IN_A_YEAR).round(2)
 
     return tax
   end
@@ -80,7 +80,7 @@ class Salary
       national_insurance_deduction = national_insurance_deduction + deduction.value
     }
 
-    national_insurance_deduction.round(2)
+    (national_insurance_deduction / MONTHS_IN_A_YEAR).round(2)
   end
 end
 
@@ -89,14 +89,20 @@ class DeductionFactory
     remaining_taxable_amount = salary_amount
     deductions = []
 
-    if salary_amount > 43000.00
-      taxable_amount = remaining_taxable_amount - 43000
+    if remaining_taxable_amount > 150000.00
+      taxable_amount = remaining_taxable_amount - 107000
+      deductions.push(Deduction.new(taxable_amount, 0.45))
+      remaining_taxable_amount = remaining_taxable_amount - taxable_amount
+    end
+
+    if remaining_taxable_amount >= 43000.00
+      taxable_amount =  remaining_taxable_amount - 43000
       deductions.push(Deduction.new(taxable_amount, 0.40))
       remaining_taxable_amount = remaining_taxable_amount - taxable_amount
     end
 
-    if remaining_taxable_amount > 11000.00
-      deductions.push(Deduction.new(remaining_taxable_amount - 11000.00, 0.20))
+    if remaining_taxable_amount >= 11000.00
+      deductions.push(Deduction.new(remaining_taxable_amount-11000, 0.20))
     end
     return deductions
   end
@@ -137,8 +143,7 @@ class Deduction
   end
 
   def calculate
-    monthly_amount = (@amount / MONTHS_IN_A_YEAR).round(2)
-    @value = (monthly_amount * @rate).round(2)
+    @value = (@amount * @rate).round(2)
   end
 end
 

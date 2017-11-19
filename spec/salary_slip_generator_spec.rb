@@ -63,7 +63,7 @@ describe 'Salary Slip Generator' do
   end
 
   it 'should apply higher contributions taxes: taxable income (higher rate): Any amount of money earned above a gross annual salary of £43,000.00 is taxed' +
-     'at 40% National Insurance (higher contributions): Any amount of money earned above a gross annual salary of £43,000.00 is only subject to a 2% NI contribution' do
+         'at 40% National Insurance (higher contributions): Any amount of money earned above a gross annual salary of £43,000.00 is only subject to a 2% NI contribution' do
     employee = Employee.new
     employee.annual_salary = 45000.00
 
@@ -78,7 +78,7 @@ describe 'Salary Slip Generator' do
   end
 
   it 'should apply Tax-free allowance: When the Annual Gross Salary exceeds £100,000.00, the tax-free allowance starts decreasing. ' +
-      'It decreases by £1 for every £2 earned over £100,000.00. And this excess is taxed at the Higher rate tax' do
+         'It decreases by £1 for every £2 earned over £100,000.00. And this excess is taxed at the Higher rate tax' do
     employee = Employee.new
     employee.annual_salary = 101000.00
 
@@ -100,7 +100,7 @@ describe 'Salary Slip Generator' do
 
     expect(salary_slip.taxable_income).to eq(12500.00)
 
-    expect(salary_slip.tax_payable).to eq(4933.33) #This is different from the Spec, but I believe it is correct
+    expect(salary_slip.tax_payable).to eq(4466.67) #This is different from the Spec, but I believe it is correct
     expect(salary_slip.tax_free_allowance).to eq(0.00)
 
   end
@@ -109,13 +109,14 @@ describe 'Salary Slip Generator' do
     employee.annual_salary = 160000.00
 
     generator = SalarySlipGenerator.new
-    #salary_slip = generator.generate_for(employee)
+    salary_slip = generator.generate_for(employee)
 
-  #  expect(salary_slip.tax_free_allowance).to eq(0.00)
- #   expect(salary_slip.taxable_income).to eq(13333.33)
-#    expect(salary_slip.tax_payable).to eq(4841.67)
+    expect(salary_slip.tax_free_allowance).to eq(0.00)
+    expect(salary_slip.taxable_income).to eq(13333.33)
+    expect(salary_slip.tax_payable).to eq(4841.67) #This is different from the Spec, but I believe it is correct
 
-    #expect(salary_slip.national_insurance_contributions).to eq(544.0)
+    expect(salary_slip.national_insurance_contributions).to eq(544.0)
+
   end
 
 
