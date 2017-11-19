@@ -12,9 +12,9 @@ class SalarySlipGenerator
     salary = Salary.new(employee.annual_salary)
 
     slip.gross_salary = salary.to_monthly
-    slip.national_insurance_contributions = salary.calculate_national_insurance
+    slip.national_insurance_contributions = salary.deduct_national_insurance
 
-    tax = salary.apply_taxes
+    tax = salary.deduct_taxes
     slip.tax_free_allowance = tax.free_allowance
     slip.tax_payable = tax.payable
     slip.taxable_income = tax.income
@@ -34,28 +34,59 @@ class Salary
     @value = value
   end
 
-  def apply_taxes
-    if @value > 11000.00
-      tax = Tax.new(@value - 11000)
-      tax.calculate
-      return tax
-    else
-      tax = NullTax.new(@value)
-      return tax
+  def deduct_taxes
+    tax = NullTax.new(@value)
+
+    remaining_taxable_amount = @value
+
+    if @value > 43000.00
+      taxable_amount = remaining_taxable_amount - 43000
+
+      payable = TaxPayable.new(taxable_amount)
+
+      remaining_taxable_amount = remaining_taxable_amount - taxable_amount
+
+      payable.calculate(0.40)
+      tax.payable = tax.payable + payable.value
     end
+
+    if @value > 11000.00
+      payable = TaxPayable.new(remaining_taxable_amount - 11000.00)
+      payable.calculate(0.20)
+      tax.payable = tax.payable + payable.value
+    end
+
+    if tax.payable > 0
+      tax.income = ((@value - 11000)/12.00).round(2)
+      tax.free_allowance = (to_monthly - tax.income).round(2)
+    end
+
+    return tax
   end
 
   def to_monthly
     (@value / MONTHS_IN_A_YEAR).round(2)
   end
 
-  def calculate_national_insurance
-    if @value > NATIONAL_INSURANCE_THRESHOLD
-      exceeding_amount = @value - NATIONAL_INSURANCE_THRESHOLD
-      ((exceeding_amount / MONTHS_IN_A_YEAR ) * NATIONAL_INSURANCE_CONTRIBUTION_RATE).round(2)
-    else
-      0.00
+  def deduct_national_insurance
+
+    national_insurance_deduction = 0
+    remaining_deduction_amount = @value
+
+    if @value > 43000
+      amount = remaining_deduction_amount - 43000
+      remaining_deduction_amount = remaining_deduction_amount - amount
+      amount = ((amount / MONTHS_IN_A_YEAR ) * 0.02).round(2)
+      national_insurance_deduction = national_insurance_deduction + amount
     end
+
+    if @value > NATIONAL_INSURANCE_THRESHOLD
+      amount = remaining_deduction_amount - NATIONAL_INSURANCE_THRESHOLD
+      amount = ((amount / MONTHS_IN_A_YEAR ) * 0.12).round(2)
+      national_insurance_deduction = national_insurance_deduction + amount
+    end
+
+    national_insurance_deduction.round(2)
   end
 end
 
@@ -63,21 +94,23 @@ class Tax
   attr_accessor :free_allowance
   attr_accessor :income
   attr_accessor :payable
-  def initialize(amount)
-    @amount = amount
-  end
-
-  def calculate
-    @income = (@amount / MONTHS_IN_A_YEAR).round(2)
-    @payable = (@income * 0.20).round(2)
-    @free_allowance = (@amount - @income).round(2)
-
-  end
 end
 
 class NullTax < Tax
   def initialize(amount)
     @free_allowance = @income = @payable = 0
+  end
+end
+
+class TaxPayable
+  attr_accessor :value
+  def initialize(amount)
+    @amount = amount
+  end
+
+  def calculate(rate)
+    monthly_amount = (@amount / MONTHS_IN_A_YEAR).round(2)
+    @value = (monthly_amount * rate).round(2)
   end
 end
 

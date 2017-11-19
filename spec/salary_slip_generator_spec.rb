@@ -60,4 +60,21 @@ describe 'Salary Slip Generator' do
     expect(salary_slip.tax_payable).to eq(0.00)
   end
 
+  it 'should apply higher contributions taxes: axable income (higher rate): Any amount of money earned above a gross annual salary of £43,000.00 is taxed' +
+     'at 40% National Insurance (higher contributions): Any amount of money earned above a gross annual salary of £43,000.00 is only subject to a 2% NI contribution' do
+    employee = Employee.new
+    employee.annual_salary = 45000.00
+
+    generator = SalarySlipGenerator.new
+    salary_slip = generator.generate_for(employee)
+
+
+    expect(salary_slip.tax_free_allowance).to eq(916.67)
+    expect(salary_slip.taxable_income).to eq(2833.33)
+    expect(salary_slip.tax_payable).to eq(600.00)
+
+    expect(salary_slip.national_insurance_contributions).to eq(352.73)
+  end
+
+
 end
