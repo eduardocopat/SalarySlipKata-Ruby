@@ -34,18 +34,35 @@ class Salary
   def deduct_taxes
     tax = Tax.new
 
-    deductions = DeductionFactory.make_tax_deductions(@amount)
+    high_earner_tax_increase = 0
 
-    #Refactor to collect?
+
+    #constants?
+    if @amount > 11000
+      if @amount > 100000
+        high_earner_tax_increase = (((@amount - 100000.00) / 2.00))
+        puts "high earned increase #{high_earner_tax_increase}"
+      end
+
+      tax.income = ((@amount - 11000 + high_earner_tax_increase) / 12.00)
+      if tax.income > to_monthly
+        tax.income = to_monthly
+      end
+
+      tax.free_allowance = (to_monthly - tax.income)
+
+    end
+
+    deductions = DeductionFactory.make_tax_deductions(@amount + high_earner_tax_increase)
+
     deductions.each {|deduction|
       deduction.calculate()
       tax.payable = tax.payable + deduction.value
     }
-    
-    if tax.payable > 0
-      tax.income = ((@amount - 11000)/12.00).round(2)
-      tax.free_allowance = (to_monthly - tax.income).round(2)
-    end
+
+    tax.free_allowance = tax.free_allowance.round(2)
+    tax.income = tax.income.round(2)
+    tax.payable = tax.payable.round(2)
 
     return tax
   end
@@ -55,11 +72,9 @@ class Salary
   end
 
   def deduct_national_insurance
-
     national_insurance_deduction = 0
     deductions = DeductionFactory.make_national_insurance_deductions(@amount)
 
-    #Refactor to collect?
     deductions.each {|deduction|
       deduction.calculate()
       national_insurance_deduction = national_insurance_deduction + deduction.value
@@ -81,10 +96,11 @@ class DeductionFactory
     end
 
     if remaining_taxable_amount > 11000.00
-      deductions.push( Deduction.new(remaining_taxable_amount - 11000.00, 0.20))
+      deductions.push(Deduction.new(remaining_taxable_amount - 11000.00, 0.20))
     end
     return deductions
   end
+
   def self.make_national_insurance_deductions(salary_amount)
     remaining_taxable_amount = salary_amount
     deductions = []
@@ -96,7 +112,7 @@ class DeductionFactory
     end
 
     if remaining_taxable_amount > 8060.00
-      deductions.push( Deduction.new(remaining_taxable_amount - 8060.00, 0.12))
+      deductions.push(Deduction.new(remaining_taxable_amount - 8060.00, 0.12))
     end
     return deductions
   end
@@ -108,18 +124,19 @@ class Tax
   attr_accessor :payable
 
   def initialize
-    @free_allowance = @income = @payable = 0
+    @free_allowance = @income = @payable = 0.00
   end
 end
 
 class Deduction
   attr_accessor :value
+
   def initialize(amount, rate)
     @amount = amount
     @rate = rate
   end
 
-  def calculate()
+  def calculate
     monthly_amount = (@amount / MONTHS_IN_A_YEAR).round(2)
     @value = (monthly_amount * @rate).round(2)
   end
