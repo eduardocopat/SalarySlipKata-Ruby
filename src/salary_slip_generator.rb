@@ -27,33 +27,30 @@ MONTHS_IN_A_YEAR = 12.0
 class Salary
   attr_accessor :value
 
-  NATIONAL_INSURANCE_THRESHOLD = 8060
-  NATIONAL_INSURANCE_CONTRIBUTION_RATE = 0.12
-
   def initialize(value)
     @value = value
   end
 
   def deduct_taxes
-    tax = NullTax.new(@value)
+    tax = Tax.new
 
     remaining_taxable_amount = @value
 
     if @value > 43000.00
       taxable_amount = remaining_taxable_amount - 43000
 
-      payable = TaxPayable.new(taxable_amount)
+      deduction = Deduction.new(taxable_amount)
 
       remaining_taxable_amount = remaining_taxable_amount - taxable_amount
+      deduction.calculate(0.40)
 
-      payable.calculate(0.40)
-      tax.payable = tax.payable + payable.value
+      tax.payable = tax.payable + deduction.value
     end
 
     if @value > 11000.00
-      payable = TaxPayable.new(remaining_taxable_amount - 11000.00)
-      payable.calculate(0.20)
-      tax.payable = tax.payable + payable.value
+      deduction = Deduction.new(remaining_taxable_amount - 11000.00)
+      deduction.calculate(0.20)
+      tax.payable = tax.payable + deduction.value
     end
 
     if tax.payable > 0
@@ -76,14 +73,19 @@ class Salary
     if @value > 43000
       amount = remaining_deduction_amount - 43000
       remaining_deduction_amount = remaining_deduction_amount - amount
-      amount = ((amount / MONTHS_IN_A_YEAR ) * 0.02).round(2)
-      national_insurance_deduction = national_insurance_deduction + amount
+
+      deduction = Deduction.new(amount)
+      deduction.calculate(0.02)
+
+      national_insurance_deduction = national_insurance_deduction + deduction.value
     end
 
-    if @value > NATIONAL_INSURANCE_THRESHOLD
-      amount = remaining_deduction_amount - NATIONAL_INSURANCE_THRESHOLD
-      amount = ((amount / MONTHS_IN_A_YEAR ) * 0.12).round(2)
-      national_insurance_deduction = national_insurance_deduction + amount
+    if @value > 8060
+      amount = remaining_deduction_amount - 8060
+      deduction = Deduction.new(amount)
+      deduction.calculate(0.12)
+
+      national_insurance_deduction = national_insurance_deduction + deduction.value
     end
 
     national_insurance_deduction.round(2)
@@ -94,15 +96,13 @@ class Tax
   attr_accessor :free_allowance
   attr_accessor :income
   attr_accessor :payable
-end
 
-class NullTax < Tax
-  def initialize(amount)
+  def initialize
     @free_allowance = @income = @payable = 0
   end
 end
 
-class TaxPayable
+class Deduction
   attr_accessor :value
   def initialize(amount)
     @amount = amount
